@@ -14,6 +14,8 @@ import com.homework.mikeyProject.exceptions.BusinessLogicException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/v1/CoinDesk")
 @Api(tags = "CoinDesk APIs")
@@ -45,6 +47,17 @@ public class CoinDeskController {
     }
 
 	/**
+	 *  查詢幣別對應表資料
+	 * @return
+	 * @throws BusinessLogicException
+	 */
+	@GetMapping(value = "/currency")
+	@ApiOperation("查詢幣別對應表資料")
+	public HttpEntity<List<CurrencyVo>> getCurrency() throws BusinessLogicException {
+		return new ResponseEntity<>(coinDeskService.getCurrency() , HttpStatus.OK);
+	}
+
+	/**
 	 * 	新增幣別對應表資料
 	 * @param currencyVo
 	 * @return
@@ -52,9 +65,8 @@ public class CoinDeskController {
 	 */
 	@PostMapping(value = "/currency")
 	@ApiOperation("新增幣別對應表資料")
-	public HttpEntity<Void> addCurrency(@RequestBody CurrencyVo currencyVo) throws BusinessLogicException {
-		coinDeskService.addCurrency(currencyVo);
-		return new ResponseEntity<>(HttpStatus.CREATED);
+	public HttpEntity<CurrencyVo> addCurrency(@RequestBody CurrencyVo currencyVo) throws BusinessLogicException {
+		return new ResponseEntity<>(coinDeskService.addCurrency(currencyVo),HttpStatus.CREATED);
 	}
 
 	/**
@@ -64,13 +76,12 @@ public class CoinDeskController {
 	 * @return
 	 * @throws BusinessLogicException
 	 */
-	@PatchMapping(value = "/{id}")
+	@PatchMapping(value = "/currency/{id}")
 	@ApiOperation("更新幣別對應表資料")
-	public HttpEntity<Void> updateCurrency(@RequestBody CurrencyVo currencyVo,
+	public HttpEntity<CurrencyVo> updateCurrency(@RequestBody CurrencyVo currencyVo,
 										   @PathVariable(value = "id") long id) throws BusinessLogicException {
 		currencyVo.setId(id);
-		coinDeskService.updateCurrency(currencyVo);
-		return new ResponseEntity<>(HttpStatus.OK);
+		return new ResponseEntity<>(coinDeskService.updateCurrency(currencyVo),HttpStatus.OK);
 	}
 
 	/**
@@ -79,7 +90,7 @@ public class CoinDeskController {
 	 * @return
 	 * @throws BusinessLogicException
 	 */
-	@DeleteMapping(value = "/{id}")
+	@DeleteMapping(value = "/currency/{id}")
 	@ApiOperation("刪除幣別對應表資料")
 	public HttpEntity<Void> deleteCurrency(@PathVariable(value = "id") long id) throws BusinessLogicException {
 		coinDeskService.deleteCurrency(id);

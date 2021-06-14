@@ -19,6 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class CoinDeskServiceImpl implements CoinDeskService {
@@ -30,6 +31,10 @@ public class CoinDeskServiceImpl implements CoinDeskService {
     private CurrencyRepository currencyRepository;
 
     final String coinDeskUrl = "http://api.coindesk.com/v1/bpi/currentprice.json";
+
+    public CoinDeskServiceImpl(CurrencyRepository currencyRepository) {
+        this.currencyRepository = currencyRepository;
+    }
 
     @Override
     public String getCoinDeskData() throws BusinessLogicException{
@@ -60,17 +65,30 @@ public class CoinDeskServiceImpl implements CoinDeskService {
     }
 
     @Override
-    public void addCurrency(CurrencyVo currencyVo) throws BusinessLogicException {
+    public List<CurrencyVo> getCurrency() throws BusinessLogicException {
+        List<Currency> list = currencyRepository.findAll();
+        if(!list.isEmpty()){
+            return currencyRepository.findAll().stream().map(currency ->
+                    CurrencyVo.builder().id(currency.getId()).currency(currency.getCurrency()).currencyName(currency.getCurrencyName()).rate(currency.getRate()).build())
+                    .collect(Collectors.toList());
+        }else{
+            throw new BusinessLogicException("幣別資料為空" , HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public CurrencyVo addCurrency(CurrencyVo currencyVo) throws BusinessLogicException {
         if(!isCurrencyExistsByCurrency(currencyVo.getCurrency()).isPresent()) {
-            currencyRepository.save(Currency.builder().currency(currencyVo.getCurrency())
+            Currency currency = currencyRepository.save(Currency.builder().currency(currencyVo.getCurrency())
                     .currencyName(currencyVo.getCurrencyName()).rate(currencyVo.getRate()).createTime(LocalDateTime.now()).build());
+            return CurrencyVo.builder().id(currency.getId()).currency(currency.getCurrency()).currencyName(currency.getCurrencyName()).rate(currency.getRate()).build();
         }else {
             throw new BusinessLogicException("幣別資料已存在", HttpStatus.CONFLICT);
         }
     }
 
     @Override
-    public void updateCurrency(CurrencyVo currencyVo) throws BusinessLogicException {
+    public CurrencyVo updateCurrency(CurrencyVo currencyVo) throws BusinessLogicException {
         Optional<Currency> currencyOptional = isCurrencyExistsById(currencyVo.getId());
         if(currencyOptional.isPresent()) {
             Currency currency = currencyOptional.get();
@@ -79,11 +97,11 @@ public class CoinDeskServiceImpl implements CoinDeskService {
             currency.setRate(null != currencyVo.getRate() ? currencyVo.getRate() : currency.getRate());
             currency.setUpdateTime(LocalDateTime.now());
             currencyRepository.save(currency);
+            return CurrencyVo.builder().id(currency.getId()).currency(currency.getCurrency()).currencyName(currency.getCurrencyName()).rate(currency.getRate()).build();
         }else {
             //部門資料不存在
             throw new BusinessLogicException("幣別資料不存在", HttpStatus.NOT_FOUND);
         }
-
     }
 
     @Override
@@ -114,7 +132,7 @@ public class CoinDeskServiceImpl implements CoinDeskService {
             CoinDeskTransferDetailDTO coinDeskTransferDetailDTO = new CoinDeskTransferDetailDTO();
             JsonObject objList = bpiObject.get(entry.getKey()).getAsJsonObject();
             coinDeskTransferDetailDTO.setCurrency(objList.get("code").getAsString());
-            coinDeskTransferDetailDTO.setCurrencyName(objList.get("code").getAsString());
+            coinDeskTransferDetailDTO.setCurrencyName(transferChineseName(objList.get("code").getAsString()));
             coinDeskTransferDetailDTO.setRate(objList.get("rate_float").getAsBigDecimal());
             coinDeskTransferDetailDTOList.add(coinDeskTransferDetailDTO);
         }
@@ -122,15 +140,28 @@ public class CoinDeskServiceImpl implements CoinDeskService {
         return coinDeskTransferDTO;
     }
 
-    private boolean isCurrencyExists(Long id) {
+    private String transferChineseName(String currency) {
+        switch(currency){
+            case "USD":
+                return "美元";
+            case "GBP":
+                return "英磅";
+            case "EUR":
+                return "歐元";
+            default:
+                return currency;
+        }
+    }
+
+    public boolean isCurrencyExists(Long id) {
         return currencyRepository.exists(id);
     }
 
-    private Optional<Currency> isCurrencyExistsById(Long id) {
+    public Optional<Currency> isCurrencyExistsById(Long id) {
         return currencyRepository.findById(id);
     }
 
-    private Optional<Currency> isCurrencyExistsByCurrency(String currency) {
+    public Optional<Currency> isCurrencyExistsByCurrency(String currency) {
         return currencyRepository.findByCurrency(currency);
     }
 

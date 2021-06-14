@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 @Data
 public class CurrencyVo {
 
+	@ApiModelProperty(value = "ID", hidden = true)
 	private long id;
 
 	@ApiModelProperty(value = "幣別", position = 1)

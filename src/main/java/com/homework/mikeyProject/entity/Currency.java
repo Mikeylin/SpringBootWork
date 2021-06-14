@@ -52,7 +52,7 @@ public class Currency {
 	@NotNull
 	private LocalDateTime createTime;
 
-	@Column(name = "update_time", nullable = false)
+	@Column(name = "update_time")
 	private LocalDateTime updateTime;
 
 }
